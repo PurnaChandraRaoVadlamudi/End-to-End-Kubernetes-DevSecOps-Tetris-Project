@@ -8,7 +8,7 @@ resource "aws_eks_cluster" "demo-cluster" {
     endpoint_private_access = true
   }
 
-  version = "1.36"
+  version = "1.32"
 
   depends_on = [
     aws_iam_role_policy_attachment.AmazonEKSClusterPolicy,
