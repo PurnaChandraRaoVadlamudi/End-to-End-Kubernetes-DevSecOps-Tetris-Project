@@ -20,7 +20,7 @@ resource "aws_internet_gateway" "igw" {
 resource "aws_subnet" "subnet" {
   vpc_id                  = aws_vpc.vpc.id
   cidr_block              = "10.1.1.0/24"
-  availability_zone       = "ap-south-1a"
+  availability_zone       = "us-east-1a"
   map_public_ip_on_launch = true
 
   tags = {
@@ -28,16 +28,36 @@ resource "aws_subnet" "subnet" {
   }
 }
 
-# Create Security Group
+# Create Security Group for EKS Cluster
 resource "aws_security_group" "sg-default" {
   vpc_id      = aws_vpc.vpc.id
   description = "EKS Cluster Security Group"
 
+  # Allow nodes to communicate with cluster
   ingress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
+    description = "Allow nodes to communicate with cluster"
+    from_port   = 1025
+    to_port     = 65535
+    protocol    = "tcp"
+    cidr_blocks = ["10.1.0.0/16"]
+  }
+
+  # Allow SSH from anywhere (for debugging)
+  ingress {
+    description = "SSH"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # Allow control plane from nodes
+  ingress {
+    description = "Kubernetes API from nodes"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["10.1.0.0/16"]
   }
 
   egress {
@@ -55,11 +75,23 @@ resource "aws_security_group" "sg-default" {
 resource "aws_subnet" "public-subnet2" {
   vpc_id                  = aws_vpc.vpc.id
   cidr_block              = "10.1.2.0/24"
-  availability_zone       = "ap-south-1b"
+  availability_zone       = "us-east-1b"
   map_public_ip_on_launch = true
 
   tags = {
     Name = var.subnet-name2
+  }
+}
+
+resource "aws_route_table" "rt" {
+  vpc_id = aws_vpc.vpc.id
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.igw.id
+  }
+
+  tags = {
+    Name = "EKS-Public-RT"
   }
 }
 
@@ -73,6 +105,11 @@ resource "aws_route_table" "rt2" {
   tags = {
     Name = var.rt-name2
   }
+}
+
+resource "aws_route_table_association" "rt-association" {
+  route_table_id = aws_route_table.rt.id
+  subnet_id      = aws_subnet.subnet.id
 }
 
 resource "aws_route_table_association" "rt-association2" {
