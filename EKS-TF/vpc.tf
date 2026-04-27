@@ -20,7 +20,7 @@ resource "aws_internet_gateway" "igw" {
 resource "aws_subnet" "subnet" {
   vpc_id                  = aws_vpc.vpc.id
   cidr_block              = "10.1.1.0/24"
-  availability_zone       = "us-east-1a"
+  availability_zone       = "ap-south-1a"
   map_public_ip_on_launch = true
 
   tags = {
@@ -75,7 +75,7 @@ resource "aws_security_group" "sg-default" {
 resource "aws_subnet" "public-subnet2" {
   vpc_id                  = aws_vpc.vpc.id
   cidr_block              = "10.1.2.0/24"
-  availability_zone       = "us-east-1b"
+  availability_zone       = "ap-south-1b"
   map_public_ip_on_launch = true
 
   tags = {
