@@ -24,7 +24,7 @@ spec:
     spec:
       containers:
       - name: tetris
-        image: purna7/tetrisv1:30      # <-- updated by V1 pipeline
+        image: purna7/tetrisv1:31
         ports:
         - containerPort: 3000
         readinessProbe:
