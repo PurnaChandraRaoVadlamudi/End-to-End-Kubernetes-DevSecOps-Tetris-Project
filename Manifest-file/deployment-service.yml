@@ -1,24 +1,84 @@
 ---
+# ============================================================
+# BLUE Deployment — currently LIVE (V1)
+# slot=blue is what the Service points to by default
+# ============================================================
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: tetris
+  name: tetris-blue
+  labels:
+    app: tetris
+    slot: blue
 spec:
   replicas: 3
   selector:
     matchLabels:
       app: tetris
+      slot: blue
   template:
     metadata:
       labels:
         app: tetris
+        slot: blue
     spec:
       containers:
       - name: tetris
-        image: purna7/tetrisv1:30
+        image: purna7/tetrisv1:30      # <-- updated by V1 pipeline
         ports:
         - containerPort: 3000
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 3000
+          initialDelaySeconds: 10
+          periodSeconds: 5
 ---
+# ============================================================
+# GREEN Deployment — new version (V2), not live yet
+# Pipeline deploys here first, then flips the Service
+# ============================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tetris-green
+  labels:
+    app: tetris
+    slot: green
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: tetris
+      slot: green
+  template:
+    metadata:
+      labels:
+        app: tetris
+        slot: green
+    spec:
+      containers:
+      - name: tetris
+        image: purna7/tetrisv2:1       # <-- updated by V2 pipeline
+        ports:
+        - containerPort: 3000
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 3000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+---
+# ============================================================
+# Single LoadBalancer Service
+#
+# SWITCH TO GREEN:  change slot: blue  →  slot: green
+# ROLLBACK TO BLUE: change slot: green →  slot: blue
+#
+# Or use kubectl:
+#   Switch:   kubectl patch svc tetris-service -p '{"spec":{"selector":{"app":"tetris","slot":"green"}}}'
+#   Rollback: kubectl patch svc tetris-service -p '{"spec":{"selector":{"app":"tetris","slot":"blue"}}}'
+# ============================================================
 apiVersion: v1
 kind: Service
 metadata:
@@ -26,6 +86,7 @@ metadata:
 spec:
   selector:
     app: tetris
+    slot: blue          # <-- ACTIVE SLOT: change to green to cut over
   ports:
   - protocol: TCP
     port: 80
