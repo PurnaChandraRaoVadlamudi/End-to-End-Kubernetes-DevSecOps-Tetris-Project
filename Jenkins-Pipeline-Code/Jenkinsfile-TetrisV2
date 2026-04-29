@@ -89,7 +89,7 @@ pipeline {
                 dir('Tetris-V2') {
                     sh '''
                     docker system prune -f
-                    docker build -t tetrisv1 .
+                    docker build -t tetrisv2 .
                     '''
                 }
             }
